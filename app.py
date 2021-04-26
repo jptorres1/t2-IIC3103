@@ -55,7 +55,7 @@ class Album(db.Model):
     genre = db.Column(db.String(200))
     artist_id = db.Column(db.String(22), db.ForeignKey('artist.id'),
         nullable=False)
-    tracks = db.relationship('Track', backref='album', lazy=True)
+    tracks = db.relationship('Track', backref='album', lazy=True, cascade="all, delete-orphan")
     artist_url = db.Column(db.String(200))
     tracks_url = db.Column(db.String(200))
     self_url = db.Column(db.String(200), unique=True)
@@ -108,6 +108,9 @@ class Track(db.Model):
         self.album_id = album_id
         self.artist_url = f'/artists/{artist_id}'
         self.album_url = f'/albums/{album_id}'
+
+    def play(self):
+        self.times_played += 1
 
     def serialize(self):
         return {
@@ -163,73 +166,115 @@ def post_track(album_id):
 @app.route('/artists', methods=['GET'])
 def artists():
     artists_all = Artist.query.all()
-    return jsonify(artists=[a.serialize() for a in artists_all])
+    if artists_all == []:
+        return Response(status=404)
+    return jsonify([a.serialize() for a in artists_all])
    
 
 @app.route('/albums', methods=['GET'])
 def albums():
     albums_all = Album.query.all()
-    return jsonify(albums=[a.serialize() for a in albums_all])
+    if albums_all == []:
+        return Response(status=404)
+    return jsonify([a.serialize() for a in albums_all])
 
 @app.route('/tracks', methods=['GET'])
 def tracks():
     tracks_all = Track.query.all()
-    return jsonify(tracks=[t.serialize() for t in tracks_all])
+    if tracks_all == []:
+        return Response(status=404)
+    return jsonify([t.serialize() for t in tracks_all])
 
 
 @app.route('/artists/<string:artist_id>', methods=['GET'])
 def artist(artist_id):
-    pass
+    artist = Artist.query.filter_by(id=artist_id).first_or_404()
+    return jsonify(artist.serialize())
 
 @app.route('/artists/<string:artist_id>/albums', methods=['GET'])
 def artist_albums(artist_id):
-    pass
+    albums_all = Album.query.filter_by(artist_id=artist_id).all()
+    if albums_all == []:
+        return Response(status=404)
+    return jsonify([a.serialize() for a in albums_all])
 
 @app.route('/artists/<string:artist_id>/tracks', methods=['GET'])
 def artist_tracks(artist_id):
-    pass
+    tracks_all = Track.query.filter_by(artist_id=artist_id).all()
+    if tracks_all == []:
+        return Response(status=404)
+    return jsonify([t.serialize() for t in tracks_all])
 
 @app.route('/albums/<string:album_id>', methods=['GET'])
 def album(album_id):
-    pass
+    album = Album.query.filter_by(id=album_id).first_or_404()
+    return jsonify(album.serialize())
 
 @app.route('/albums/<string:album_id>/tracks', methods=['GET'])
 def album_tracks(album_id):
-    pass
+    tracks_all = Track.query.filter_by(album_id=album_id).all()
+    if tracks_all == []:
+        return Response(status=404)
+    return jsonify([t.serialize() for t in tracks_all])
 
 @app.route('/tracks/<string:track_id>', methods=['GET'])
 def track(track_id):
-    pass
+    track = Track.query.filter_by(id=track_id).first_or_404()
+    return jsonify(track.serialize())
 
 
 
 # PUT
 @app.route('/artists/<string:artist_id>/albums/play', methods=['PUT'])
 def play_artists(artist_id):
-    pass
+    tracks_all = Track.query.filter_by(artist_id=artist_id).all()
+    if tracks_all == []:
+        return Response(status=404)
+    for track in tracks_all:
+        track.play()
+    db.session.commit()
+    return Response(status=200)
 
 @app.route('/albums/<string:album_id>/tracks/play', methods=['PUT'])
 def play_album(album_id):
-    pass
+    tracks_all = Track.query.filter_by(album_id=album_id).all()
+    if tracks_all == []:
+        return Response(status=404)
+    for track in tracks_all:
+        track.play()
+    db.session.commit()
+    return Response(status=200)
 
 @app.route('/tracks/<string:track_id>/play', methods=['PUT'])
 def play_track(track_id):
-    pass
+    track = Track.query.filter_by(id=track_id).first_or_404()
+    track.play()
+    db.session.commit()
+    return Response(status=200)
 
 
 
 #DELETE
 @app.route('/artists/<string:artist_id>', methods=['DELETE'])
 def delete_artist(artist_id):
-    pass
+    artist = Artist.query.filter_by(id=artist_id).first_or_404()
+    db.session.delete(artist)
+    db.session.commit()
+    return Response(status=204)
 
 @app.route('/albums/<string:album_id>', methods=['DELETE'])
 def delete_album(album_id):
-    pass
+    album = Album.query.filter_by(id=album_id).first_or_404()
+    db.session.delete(album)
+    db.session.commit()
+    return Response(status=204)
 
 @app.route('/tracks/<string:track_id>', methods=['DELETE'])
 def delete_track(track_id):
-    pass
+    track = Track.query.filter_by(id=track_id).first_or_404()
+    db.session.delete(track)
+    db.session.commit()
+    return Response(status=204)
 
 if __name__ == '__main__':
     app.run()
