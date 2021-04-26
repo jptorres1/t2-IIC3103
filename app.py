@@ -6,7 +6,7 @@ from psycopg2.errors import UniqueViolation, ForeignKeyViolation
 
 app = Flask(__name__)
 
-ENV = 'dev'
+ENV = 'prod'
 
 if ENV == 'dev':
     app.debug = True
