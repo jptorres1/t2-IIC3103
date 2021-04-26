@@ -21,8 +21,8 @@ class Artist(db.Model):
     id = db.Column(db.String(22), primary_key=True)
     name = db.Column(db.String(200), unique=True)
     age = db.Column(db.Integer)
-    albums= db.relationship('Album', backref='artist', lazy=True)
-    tracks = db.relationship('Track', backref='artist', lazy=True)
+    albums= db.relationship('Album', backref='artist', lazy=True, cascade="all, delete-orphan")
+    tracks = db.relationship('Track', backref='artist', lazy=True, cascade="all, delete-orphan")
     albums_url = db.Column(db.String(200), unique=True)
     tracks_url = db.Column(db.String(200), unique=True)
     self_url = db.Column(db.String(200), unique=True)
@@ -126,9 +126,9 @@ class Track(db.Model):
 
 
 
-ARTIST_KEYS = ['name', 'age']
-ALBUM_KEYS = ['name', 'genre']
-TRACK_KEYS = ['name', 'duration', 'times_played']
+# ARTIST_KEYS = ['name', 'age']
+# ALBUM_KEYS = ['name', 'genre']
+# TRACK_KEYS = ['name', 'duration', 'times_played']
 
 # POST
 @app.route('/artists', methods=['POST'])
