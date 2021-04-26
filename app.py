@@ -31,7 +31,7 @@ class Artist(db.Model):
 
     def __init__(self, id, name, age):
         self.id = id
-        self.self_url = f'/artists/{id}'
+        self.self_url = f'https://espotifai.herokuapp.com/artists/{id}'
         self.name = name
         self.age = age
         self.albums_url = self.self_url + '/albums'
@@ -65,11 +65,11 @@ class Album(db.Model):
 
     def __init__(self, id, name, genre, artist_id):
         self.id = id
-        self.self_url = f'/albums/{id}'
+        self.self_url = f'https://espotifai.herokuapp.com/albums/{id}'
         self.name = name
         self.genre = genre
         self.artist_id = artist_id
-        self.artist_url = f'/artists/{artist_id}'
+        self.artist_url = f'https://espotifai.herokuapp.com/artists/{artist_id}'
         self.tracks_url = self.self_url + f'/tracks'
 
     def serialize(self):
@@ -102,14 +102,14 @@ class Track(db.Model):
 
     def __init__(self, id, name, duration, artist_id, album_id):
         self.id = id
-        self.self_url = f'/tracks/{id}'
+        self.self_url = f'https://espotifai.herokuapp.com/tracks/{id}'
         self.name = name
         self.duration = duration
         self.times_played = 0
         self.artist_id = artist_id
         self.album_id = album_id
-        self.artist_url = f'/artists/{artist_id}'
-        self.album_url = f'/albums/{album_id}'
+        self.artist_url = f'https://espotifai.herokuapp.com/artists/{artist_id}'
+        self.album_url = f'https://espotifai.herokuapp.com/albums/{album_id}'
 
     def play(self):
         self.times_played += 1
