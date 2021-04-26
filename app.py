@@ -1,4 +1,4 @@
-from flask import request, Flask, Response, jsonify
+from flask import request, Flask, Response, jsonify, json
 from flask_sqlalchemy import SQLAlchemy
 from base64 import b64encode
 from sqlalchemy.exc import IntegrityError
@@ -152,8 +152,10 @@ def post_artist():
     except ValueError:
         return Response(status=400)
     except IntegrityError as e:
+        db.session.rollback()
         if isinstance(e.orig, UniqueViolation):
-            return Response(status=409)
+            artist = Artist.query.filter_by(id=_id).first()
+            return Response(status=409, response=json.dumps(artist.serialize()), mimetype='json')
 
 
 @app.route('/artists/<string:artist_id>/albums', methods=['POST'])
@@ -172,8 +174,10 @@ def post_album(artist_id):
         return Response(status=201)
 
     except IntegrityError as e:
+        db.session.rollback()
         if isinstance(e.orig, UniqueViolation):
-            return Response(status=409)
+            album = Album.query.filter_by(id=_id).first()
+            return Response(status=409, response=json.dumps(album.serialize()), mimetype='json')
         elif isinstance(e.orig, ForeignKeyViolation):
             return Response(status=422)
 
@@ -199,8 +203,10 @@ def post_track(album_id):
     except ValueError:
         return Response(status=400)
     except IntegrityError as e:
+        db.session.rollback()
         if isinstance(e.orig, UniqueViolation):
-            return Response(status=409, response=_id)
+            track = Track.query.filter_by(id=_id).first()
+            return Response(status=409, response=json.dumps(track.serialize()), mimetype='json')
         elif isinstance(e.orig, ForeignKeyViolation):
             return Response(status=422)
     
