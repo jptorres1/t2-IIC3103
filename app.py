@@ -140,8 +140,10 @@ def post_artist():
     age = data.get('age')
 
     try:
+        if (name is None) or (age is None):
+            return Response(status=400)
         age = int(age)
-        if (name is None) or (age is None) or (type(age) is not int):
+        if (type(age) is not int):
             return Response(status=400)
         _id = b64encode(name.encode()).decode('utf-8')[:22]
         artist = Artist(id=_id, name=name, age=age)
