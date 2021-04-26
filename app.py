@@ -6,7 +6,7 @@ from psycopg2.errors import UniqueViolation, ForeignKeyViolation
 
 app = Flask(__name__)
 
-ENV = 'prod'
+ENV = 'dev'
 
 if ENV == 'dev':
     app.debug = True
@@ -194,9 +194,11 @@ def post_track(album_id):
 
     try:
         duration = float(duration)
-        artist_id = Album.query.filter_by(id=album_id).first().artist_id
+        artist = Album.query.filter_by(id=album_id).first()
+        if artist is None:
+            return Response(status=422)
         track = Track(id=_id, name=name, duration=duration, 
-                        artist_id = artist_id, album_id=album_id)
+                        artist_id = artist.artist_id, album_id=album_id)
         db.session.add(track)
         db.session.commit()
         return Response(status=201, response=json.dumps(track.serialize()), mimetype='json')
