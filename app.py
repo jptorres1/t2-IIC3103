@@ -148,7 +148,7 @@ def post_artist():
         artist = Artist(id=_id, name=name, age=age)
         db.session.add(artist)
         db.session.commit()
-        return Response(status=201)
+        return Response(status=201, response=json.dumps(artist.serialize()), mimetype='json')
 
     except ValueError:
         return Response(status=400)
@@ -172,7 +172,7 @@ def post_album(artist_id):
         album = Album(id=_id, name=name, genre=genre, artist_id=artist_id)
         db.session.add(album)
         db.session.commit()
-        return Response(status=201)
+        return Response(status=201, response=json.dumps(album.serialize()), mimetype='json')
 
     except IntegrityError as e:
         db.session.rollback()
@@ -199,7 +199,7 @@ def post_track(album_id):
                         artist_id = artist_id, album_id=album_id)
         db.session.add(track)
         db.session.commit()
-        return Response(status=201)
+        return Response(status=201, response=json.dumps(track.serialize()), mimetype='json')
 
     except ValueError:
         return Response(status=400)
