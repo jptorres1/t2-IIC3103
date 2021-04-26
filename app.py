@@ -6,7 +6,7 @@ from psycopg2.errors import UniqueViolation, ForeignKeyViolation
 
 app = Flask(__name__)
 
-ENV = 'prod'
+ENV = 'dev'
 
 if ENV == 'dev':
     app.debug = True
@@ -135,14 +135,13 @@ class Track(db.Model):
 # POST
 @app.route('/artists', methods=['POST'])
 def post_artist():
-    data = dict(request.args)
+    data = json.loads(request.get_data())
     name = data.get('name')
     age = data.get('age')
 
     try:
         if (name is None) or (age is None):
-            return Response(status=400)
-        age = int(age)
+            return Response(status=400)        
         if (type(age) is not int):
             return Response(status=400)
         _id = b64encode(name.encode()).decode('utf-8')[:22]
@@ -162,7 +161,7 @@ def post_artist():
 
 @app.route('/artists/<string:artist_id>/albums', methods=['POST'])
 def post_album(artist_id):
-    data = dict(request.args)
+    data = json.loads(request.get_data())
     name = data.get('name')
     genre = data.get('genre')
     if (name is None) or (genre is None):
@@ -186,7 +185,7 @@ def post_album(artist_id):
 
 @app.route('/albums/<string:album_id>/tracks', methods=['POST'])
 def post_track(album_id):
-    data = dict(request.args)
+    data = json.loads(request.get_data())
     name = data.get('name')
     duration = data.get('duration')
     if (name is None) or (duration is None):
