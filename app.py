@@ -1,6 +1,8 @@
 from flask import request, Flask, Response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from base64 import b64encode
+from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation, ForeignKeyViolation
 
 app = Flask(__name__)
 
@@ -134,31 +136,74 @@ class Track(db.Model):
 @app.route('/artists', methods=['POST'])
 def post_artist():
     data = dict(request.args)
-    _id = b64encode(data.get('name').encode()).decode('utf-8')[:22]
-    artist = Artist(id=_id, name=data.get('name'), age=data.get('age'))
-    db.session.add(artist)
-    db.session.commit()
-    return Response(status=201) # PENDIENTE
+    name = data.get('name')
+    age = data.get('age')
+
+    try:
+        age = int(age)
+        if (name is None) or (age is None) or (type(age) is not int):
+            return Response(status=400)
+        _id = b64encode(name.encode()).decode('utf-8')[:22]
+        artist = Artist(id=_id, name=name, age=age)
+        db.session.add(artist)
+        db.session.commit()
+        return Response(status=201)
+
+    except ValueError:
+        return Response(status=400)
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            return Response(status=409)
+
 
 @app.route('/artists/<string:artist_id>/albums', methods=['POST'])
 def post_album(artist_id):
     data = dict(request.args)
-    _id = b64encode(f'{data.get("name")}:{artist_id}'.encode()).decode('utf-8')[:22]
-    album = Album(id=_id, name=data.get('name'), genre=data.get('genre'), artist_id=artist_id)
-    db.session.add(album)
-    db.session.commit()
-    return Response(status=201)
+    name = data.get('name')
+    genre = data.get('genre')
+    if (name is None) or (genre is None):
+        return Response(status=400)
+    _id = b64encode(f'{name}:{artist_id}'.encode()).decode('utf-8')[:22]
+
+    try:
+        album = Album(id=_id, name=name, genre=genre, artist_id=artist_id)
+        db.session.add(album)
+        db.session.commit()
+        return Response(status=201)
+
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            return Response(status=409)
+        elif isinstance(e.orig, ForeignKeyViolation):
+            return Response(status=422)
+
 
 @app.route('/albums/<string:album_id>/tracks', methods=['POST'])
 def post_track(album_id):
     data = dict(request.args)
-    _id = b64encode(f'{data.get("name")}:{album_id}'.encode()).decode('utf-8')[:22]
-    artist_id = Album.query.filter_by(id=album_id).first().artist_id
-    track = Track(id=_id, name=data.get('name'), duration=data.get('duration'), 
-                    artist_id = artist_id, album_id=album_id)
-    db.session.add(track)
-    db.session.commit()
-    return Response(status=201)
+    name = data.get('name')
+    duration = data.get('duration')
+    if (name is None) or (duration is None):
+        return Response(status=400)
+    _id = b64encode(f'{name}:{album_id}'.encode()).decode('utf-8')[:22]
+
+    try:
+        duration = float(duration)
+        artist_id = Album.query.filter_by(id=album_id).first().artist_id
+        track = Track(id=_id, name=name, duration=duration, 
+                        artist_id = artist_id, album_id=album_id)
+        db.session.add(track)
+        db.session.commit()
+        return Response(status=201)
+
+    except ValueError:
+        return Response(status=400)
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            return Response(status=409, response=_id)
+        elif isinstance(e.orig, ForeignKeyViolation):
+            return Response(status=422)
+    
 
 
 
@@ -178,6 +223,7 @@ def albums():
         return Response(status=404)
     return jsonify([a.serialize() for a in albums_all])
 
+
 @app.route('/tracks', methods=['GET'])
 def tracks():
     tracks_all = Track.query.all()
@@ -191,12 +237,14 @@ def artist(artist_id):
     artist = Artist.query.filter_by(id=artist_id).first_or_404()
     return jsonify(artist.serialize())
 
+
 @app.route('/artists/<string:artist_id>/albums', methods=['GET'])
 def artist_albums(artist_id):
     albums_all = Album.query.filter_by(artist_id=artist_id).all()
     if albums_all == []:
         return Response(status=404)
     return jsonify([a.serialize() for a in albums_all])
+
 
 @app.route('/artists/<string:artist_id>/tracks', methods=['GET'])
 def artist_tracks(artist_id):
@@ -205,10 +253,12 @@ def artist_tracks(artist_id):
         return Response(status=404)
     return jsonify([t.serialize() for t in tracks_all])
 
+
 @app.route('/albums/<string:album_id>', methods=['GET'])
 def album(album_id):
     album = Album.query.filter_by(id=album_id).first_or_404()
     return jsonify(album.serialize())
+
 
 @app.route('/albums/<string:album_id>/tracks', methods=['GET'])
 def album_tracks(album_id):
@@ -216,6 +266,7 @@ def album_tracks(album_id):
     if tracks_all == []:
         return Response(status=404)
     return jsonify([t.serialize() for t in tracks_all])
+
 
 @app.route('/tracks/<string:track_id>', methods=['GET'])
 def track(track_id):
@@ -235,6 +286,7 @@ def play_artists(artist_id):
     db.session.commit()
     return Response(status=200)
 
+
 @app.route('/albums/<string:album_id>/tracks/play', methods=['PUT'])
 def play_album(album_id):
     tracks_all = Track.query.filter_by(album_id=album_id).all()
@@ -244,6 +296,7 @@ def play_album(album_id):
         track.play()
     db.session.commit()
     return Response(status=200)
+
 
 @app.route('/tracks/<string:track_id>/play', methods=['PUT'])
 def play_track(track_id):
@@ -262,6 +315,7 @@ def delete_artist(artist_id):
     db.session.commit()
     return Response(status=204)
 
+
 @app.route('/albums/<string:album_id>', methods=['DELETE'])
 def delete_album(album_id):
     album = Album.query.filter_by(id=album_id).first_or_404()
@@ -269,12 +323,15 @@ def delete_album(album_id):
     db.session.commit()
     return Response(status=204)
 
+
 @app.route('/tracks/<string:track_id>', methods=['DELETE'])
 def delete_track(track_id):
     track = Track.query.filter_by(id=track_id).first_or_404()
     db.session.delete(track)
     db.session.commit()
     return Response(status=204)
+
+
 
 if __name__ == '__main__':
     app.run()
