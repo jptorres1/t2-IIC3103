@@ -3,7 +3,6 @@ from flask_sqlalchemy import SQLAlchemy
 from base64 import b64encode
 from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import UniqueViolation, ForeignKeyViolation
-import os
 
 app = Flask(__name__)
 
@@ -14,7 +13,7 @@ if ENV == 'dev':
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost/'
 else:
     app.debug = False
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+    app.config['SQLALCHEMY_DATABASE_URI'] = "postgres://xpvmhlsrwckdnh:a86b920f1ae2fdc0f80513ee8f32313b17637cb96ce6a9fd565b99b7b3bea43b@ec2-54-152-185-191.compute-1.amazonaws.com:5432/d3ej5jldbbptf3"
     
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
